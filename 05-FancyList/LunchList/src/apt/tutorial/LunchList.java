@@ -78,7 +78,7 @@ public class LunchList extends Activity {
 			if (row==null) {													
 				LayoutInflater inflater=getLayoutInflater();
 				
-				row=inflater.inflate(R.layout.row, null);
+				row=inflater.inflate(R.layout.row, parent, false);
 				wrapper=new RestaurantWrapper(row);
 				row.setTag(wrapper);
 			}
@@ -119,7 +119,7 @@ public class LunchList extends Activity {
 		
 		TextView getName() {
 			if (name==null) {
-				name=(TextView)row.findViewById(R.id.name);
+				name=(TextView)row.findViewById(R.id.title);
 			}
 			
 			return(name);

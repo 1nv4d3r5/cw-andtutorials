@@ -156,7 +156,7 @@ public class LunchList extends TabActivity {
 			if (row==null) {													
 				LayoutInflater inflater=getLayoutInflater();
 				
-				row=inflater.inflate(R.layout.row, null);
+				row=inflater.inflate(R.layout.row, parent, false);
 				wrapper=new RestaurantWrapper(row);
 				row.setTag(wrapper);
 			}

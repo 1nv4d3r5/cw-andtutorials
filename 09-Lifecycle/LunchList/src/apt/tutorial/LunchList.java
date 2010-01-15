@@ -9,13 +9,13 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.LayoutInflater;
+import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.ProgressBar;
 import android.widget.RadioGroup;
 import android.widget.TabHost;
 import android.widget.TextView;
@@ -32,19 +32,19 @@ public class LunchList extends TabActivity {
 	EditText notes=null;
 	RadioGroup types=null;
 	Restaurant current=null;
-	ProgressBar progress=null;
 	AtomicBoolean isActive=new AtomicBoolean(true);
+	int progress=0;
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_PROGRESS);
 		setContentView(R.layout.main);
 		
 		name=(EditText)findViewById(R.id.name);
 		address=(EditText)findViewById(R.id.addr);
 		notes=(EditText)findViewById(R.id.notes);
 		types=(RadioGroup)findViewById(R.id.types);
-		progress=(ProgressBar)findViewById(R.id.progress);
 		
 		Button save=(Button)findViewById(R.id.save);
 		
@@ -86,7 +86,7 @@ public class LunchList extends TabActivity {
 		
 		isActive.set(true);
 		
-		if (progress.getProgress()>0) {
+		if (progress>0) {
 			startWork();
 		}
 	}
@@ -122,14 +122,15 @@ public class LunchList extends TabActivity {
 	}
 	
 	private void startWork() {
-		progress.setVisibility(View.VISIBLE);
+		setProgressBarVisibility(true);
 		new Thread(longTask).start();			
 	}
 	
 	private void doSomeLongWork(final int incr) {
 		runOnUiThread(new Runnable() {
 			public void run() {
-				progress.incrementProgressBy(incr);
+				progress+=incr;
+				setProgress(progress);
 			}
 		});
 		
@@ -187,17 +188,17 @@ public class LunchList extends TabActivity {
 	
 	private Runnable longTask=new Runnable() {
 		public void run() {
-			for (int i=progress.getProgress();
-					 i<100 && isActive.get();
-					 i+=2) {
-				doSomeLongWork(2);
+			for (int i=progress;
+					 i<10000 && isActive.get();
+					 i+=200) {
+				doSomeLongWork(200);
 			}
 			
 			if (isActive.get()) {
 				runOnUiThread(new Runnable() {
 					public void run() {
-						progress.setVisibility(View.GONE);
-						progress.setProgress(0);
+						setProgressBarVisibility(false);
+						progress=0;
 					}
 				});
 			}
@@ -219,7 +220,7 @@ public class LunchList extends TabActivity {
 			if (row==null) {													
 				LayoutInflater inflater=getLayoutInflater();
 				
-				row=inflater.inflate(R.layout.row, null);
+				row=inflater.inflate(R.layout.row, parent, false);
 				wrapper=new RestaurantWrapper(row);
 				row.setTag(wrapper);
 			}

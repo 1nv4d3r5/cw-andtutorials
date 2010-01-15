@@ -12,13 +12,13 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.LayoutInflater;
+import android.view.Window;
 import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.CursorAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.ProgressBar;
 import android.widget.RadioGroup;
 import android.widget.TabHost;
 import android.widget.TextView;
@@ -28,30 +28,30 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class LunchList extends TabActivity {
+	Cursor model=null;
 	RestaurantAdapter adapter=null;
 	EditText name=null;
 	EditText address=null;
 	EditText notes=null;
 	RadioGroup types=null;
 	Restaurant current=null;
-	ProgressBar progress=null;
 	AtomicBoolean isActive=new AtomicBoolean(true);
+	int progress=0;
 	SQLiteDatabase db=null;
-	Cursor model=null;
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_PROGRESS);
 		setContentView(R.layout.main);
+		
+		db=(new RestaurantSQLiteHelper(this))
+															 .getWritableDatabase();
 		
 		name=(EditText)findViewById(R.id.name);
 		address=(EditText)findViewById(R.id.addr);
 		notes=(EditText)findViewById(R.id.notes);
 		types=(RadioGroup)findViewById(R.id.types);
-		progress=(ProgressBar)findViewById(R.id.progress);
-		
-		db=(new RestaurantSQLiteHelper(this))
-																		.getWritableDatabase();
 		
 		Button save=(Button)findViewById(R.id.save);
 		
@@ -61,7 +61,6 @@ public class LunchList extends TabActivity {
 		
 		model=Restaurant.getAll(db);
 		startManagingCursor(model);
-		
 		adapter=new RestaurantAdapter(model);
 		list.setAdapter(adapter);
 		
@@ -96,7 +95,7 @@ public class LunchList extends TabActivity {
 		
 		isActive.set(true);
 		
-		if (progress.getProgress()>0) {
+		if (progress>0) {
 			startWork();
 		}
 	}
@@ -104,8 +103,6 @@ public class LunchList extends TabActivity {
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-	
-		model.close();	
 		db.close();
 	}
 	
@@ -140,14 +137,15 @@ public class LunchList extends TabActivity {
 	}
 	
 	private void startWork() {
-		progress.setVisibility(View.VISIBLE);
+		setProgressBarVisibility(true);
 		new Thread(longTask).start();			
 	}
 	
 	private void doSomeLongWork(final int incr) {
 		runOnUiThread(new Runnable() {
 			public void run() {
-				progress.incrementProgressBy(incr);
+				progress+=incr;
+				setProgress(progress);
 			}
 		});
 		
@@ -165,11 +163,9 @@ public class LunchList extends TabActivity {
 				case R.id.sit_down:
 					current.setType("sit_down");
 					break;
-					
 				case R.id.take_out:
 					current.setType("take_out");
 					break;
-					
 				case R.id.delivery:
 					current.setType("delivery");
 					break;
@@ -182,11 +178,10 @@ public class LunchList extends TabActivity {
 	
 	private AdapterView.OnItemClickListener onListClick=new AdapterView.OnItemClickListener() {
 		public void onItemClick(AdapterView<?> parent,
-														 View view, int position,
-														 long id) {
+															View view, int position,
+															long id) {
 			model.moveToPosition(position);
 			current=new Restaurant().loadFrom(model);
-			
 			name.setText(current.getName());
 			address.setText(current.getAddress());
 			notes.setText(current.getNotes());
@@ -207,17 +202,17 @@ public class LunchList extends TabActivity {
 	
 	private Runnable longTask=new Runnable() {
 		public void run() {
-			for (int i=progress.getProgress();
-					 i<100 && isActive.get();
-					 i+=2) {
-				doSomeLongWork(2);
+			for (int i=progress;
+					 i<10000 && isActive.get();
+					 i+=200) {
+				doSomeLongWork(200);
 			}
 			
 			if (isActive.get()) {
 				runOnUiThread(new Runnable() {
 					public void run() {
-						progress.setVisibility(View.GONE);
-						progress.setProgress(0);
+						setProgressBarVisibility(false);
+						progress=0;
 					}
 				});
 			}
@@ -231,7 +226,7 @@ public class LunchList extends TabActivity {
 		
 		@Override
 		public void bindView(View row, Context ctxt,
-													Cursor c) {
+												 Cursor c) {
 			RestaurantWrapper wrapper=(RestaurantWrapper)row.getTag();
 			
 			wrapper.populateFrom(c);
@@ -239,13 +234,12 @@ public class LunchList extends TabActivity {
 		
 		@Override
 		public View newView(Context ctxt, Cursor c,
-												ViewGroup parent) {
+												 ViewGroup parent) {
 			LayoutInflater inflater=getLayoutInflater();
-			
-			View row=inflater.inflate(R.layout.row, null);
+			View row=inflater.inflate(R.layout.row, parent, false);
 			RestaurantWrapper wrapper=new RestaurantWrapper(row);
-			row.setTag(wrapper);
 			
+			row.setTag(wrapper);
 			wrapper.populateFrom(c);
 			
 			return(row);
@@ -265,9 +259,8 @@ public class LunchList extends TabActivity {
 		void populateFrom(Cursor c) {
 			getName().setText(c.getString(c.getColumnIndex("name")));
 			getAddress().setText(c.getString(c.getColumnIndex("address")));
-	
 			String type=c.getString(c.getColumnIndex("type"));
-	
+			
 			if (type.equals("sit_down")) {
 				getIcon().setImageResource(R.drawable.ball_red);
 			}

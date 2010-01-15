@@ -15,21 +15,10 @@
 			android:layout_height="fill_parent"
 			android:paddingTop="62px"
 			>
-			<LinearLayout
+			<ListView android:id="@+id/restaurants"
 				android:layout_width="fill_parent"
 				android:layout_height="fill_parent"
-				>
-				<ProgressBar android:id="@+id/progress"
-					style="?android:attr/progressBarStyleHorizontal"
-					android:layout_width="fill_parent"
-					android:layout_height="wrap_content"
-					android:visibility="gone"
-				/>
-				<ListView android:id="@+id/restaurants"
-					android:layout_width="fill_parent"
-					android:layout_height="wrap_content"
-				/>
-			</LinearLayout>
+			/>
 			<TableLayout android:id="@+id/details"
 				android:layout_width="fill_parent"
 				android:layout_height="wrap_content"
