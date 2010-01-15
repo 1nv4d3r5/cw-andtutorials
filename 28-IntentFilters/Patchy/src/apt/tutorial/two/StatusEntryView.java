@@ -3,7 +3,6 @@ package apt.tutorial.two;
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
@@ -74,9 +73,5 @@ public class StatusEntryView extends LinearLayout {
 		});
 		
 		status=(EditText)findViewById(R.id.status);
-		
-		Typeface face=Typeface.createFromAsset(getContext().getAssets(),
-																						"LiberationSerif-Regular.ttf");
-		status.setTypeface(face);
 	}
 }

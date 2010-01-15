@@ -4,8 +4,4 @@
 		android:title="Call"
 		android:icon="@android:drawable/ic_menu_call"
 	/>
-	<item android:id="@+id/photo"
-		android:title="Take a Photo"
-		android:icon="@android:drawable/ic_menu_camera"
-	/>
 </menu>

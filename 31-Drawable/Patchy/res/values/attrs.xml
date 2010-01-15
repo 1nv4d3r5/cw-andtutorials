@@ -1,6 +1,0 @@
-<resources>
-	<declare-styleable name="StatusEntryView">
-		<attr name="labelCaption" format="string" />
-		<attr name="buttonCaption" format="string" />
-	</declare-styleable>
-</resources>
