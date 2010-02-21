@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<TabHost xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@android:id/tabhost"
 	android:layout_width="fill_parent"
 	android:layout_height="fill_parent">
-	<TabHost android:id="@android:id/tabhost"
+	<LinearLayout
+		android:orientation="vertical"
 		android:layout_width="fill_parent"
-		android:layout_height="fill_parent"
-		>
+		android:layout_height="fill_parent">
 		<TabWidget android:id="@android:id/tabs"
 			android:layout_width="fill_parent"
 			android:layout_height="wrap_content"
@@ -13,17 +14,11 @@
 		<FrameLayout android:id="@android:id/tabcontent"
 			android:layout_width="fill_parent"
 			android:layout_height="fill_parent"
-			android:paddingTop="62px"
 			>
-			<LinearLayout
+			<ListView android:id="@+id/restaurants"
 				android:layout_width="fill_parent"
 				android:layout_height="fill_parent"
-				>
-				<ListView android:id="@+id/restaurants"
-					android:layout_width="fill_parent"
-					android:layout_height="wrap_content"
-				/>
-			</LinearLayout>
+			/>
 			<TableLayout android:id="@+id/details"
 				android:layout_width="fill_parent"
 				android:layout_height="wrap_content"
@@ -70,5 +65,5 @@
 				/>
 			</TableLayout>
 		</FrameLayout>
-	</TabHost>
-</LinearLayout>
+	</LinearLayout>
+</TabHost>

@@ -128,30 +128,6 @@ public class LunchList extends Activity {
 		SystemClock.sleep(250);	// should be something more useful!
 	}
 	
-	private View.OnClickListener onSave=new View.OnClickListener() {
-		public void onClick(View v) {
-			current=new Restaurant();
-			current.setName(name.getText().toString());
-			current.setAddress(address.getText().toString());
-			current.setNotes(notes.getText().toString());
-			
-			switch (types.getCheckedRadioButtonId()) {
-				case R.id.sit_down:
-					current.setType("sit_down");
-					break;
-				case R.id.take_out:
-					current.setType("take_out");
-					break;
-				case R.id.delivery:
-					current.setType("delivery");
-					break;
-			}
-			
-			current.save(db);
-			model.requery();
-		}
-	};
-	
 	private AdapterView.OnItemClickListener onListClick=new AdapterView.OnItemClickListener() {
 		public void onItemClick(AdapterView<?> parent,
 														View view, int position,

@@ -55,6 +55,13 @@ public class Patchy extends Activity {
 		client.setParams(params);
 	}
 	
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		
+		client.getConnectionManager().shutdown(); 
+	}
+	
 	private String getCredentials() {
 		String u=user.getText().toString();
 		String p=password.getText().toString();
