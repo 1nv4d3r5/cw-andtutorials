@@ -40,8 +40,6 @@ public class WidgetService extends IntentService {
 				c.moveToFirst();
 				updateViews.setTextViewText(R.id.name, c.getString(1));
 				
-android.util.Log.w("FOO", c.getString(1));				
-				
 				Intent i=new Intent(this, DetailForm.class);
 				
 				i.putExtra(LunchList.ID_EXTRA, c.getString(0));
