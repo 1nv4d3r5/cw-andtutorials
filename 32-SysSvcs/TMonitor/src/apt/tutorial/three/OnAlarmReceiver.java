@@ -9,12 +9,11 @@ import com.commonsware.cwac.wakeful.WakefulIntentService;
 public class OnAlarmReceiver extends BroadcastReceiver {
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		WakefulIntentService.acquireStaticLock(context);
 		
 		Intent i=new Intent(context, TwitterMonitor.class);
 		
 		i.setAction(TwitterMonitor.POLL_ACTION);
 		
-		context.startService(i);
+		WakefulIntentService.sendWakefulWork(context, i);
 	}
 }

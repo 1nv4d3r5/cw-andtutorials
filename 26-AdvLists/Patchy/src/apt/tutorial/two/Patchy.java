@@ -97,7 +97,6 @@ public class Patchy extends TabActivity	{
 		
 		ListView list=(ListView)findViewById(R.id.timeline);
 		
-//		list.addHeaderView(buildHeader());
 		list.setAdapter(adapter);
 		list.setOnItemClickListener(onStatusClick);
 		list.setOnItemSelectedListener(selectionListener);
@@ -242,6 +241,7 @@ public class Patchy extends TabActivity	{
 		if (client==null) {
 			client=new Twitter(prefs.getString("user", ""),
 													prefs.getString("password", ""));
+			client.setAPIRootUrl("https://identi.ca/api");
 		}
 		
 		return(client);

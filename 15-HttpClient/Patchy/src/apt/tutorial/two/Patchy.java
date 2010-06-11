@@ -73,7 +73,7 @@ public class Patchy extends Activity {
 		try {
 			String s=status.getText().toString();
 			
-			HttpPost post=new HttpPost("http://twitter.com/statuses/update.json");
+			HttpPost post=new HttpPost("https://identi.ca/api/statuses/update.json");
 			
 			post.addHeader("Authorization",
 										 "Basic "+getCredentials());

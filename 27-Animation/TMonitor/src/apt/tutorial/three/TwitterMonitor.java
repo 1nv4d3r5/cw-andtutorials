@@ -54,6 +54,9 @@ public class TwitterMonitor extends Service {
 	synchronized private void poll(Account l) {
 		try {
 			Twitter client=new Twitter(l.user, l.password);
+
+			client.setAPIRootUrl("https://identi.ca/api");
+
 			List<Twitter.Status> timeline=client.getFriendsTimeline();
 			
 			for (Twitter.Status s : timeline) {

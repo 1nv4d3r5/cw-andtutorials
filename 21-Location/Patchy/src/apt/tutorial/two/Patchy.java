@@ -221,6 +221,7 @@ public class Patchy extends TabActivity	{
 		if (client==null) {
 			client=new Twitter(prefs.getString("user", ""),
 													prefs.getString("password", ""));
+			client.setAPIRootUrl("https://identi.ca/api");
 		}
 		
 		return(client);
