@@ -1,9 +1,9 @@
 package apt.tutorial.two;
 
-import android.app.TabActivity ;
+import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.NotificationManager;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
@@ -21,29 +21,24 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.TabHost;
 import android.widget.TextView;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import winterwell.jtwitter.Twitter;
-import apt.tutorial.ITwitterListener;
-import apt.tutorial.ITwitterMonitor;
+import apt.tutorial.IPostListener;
+import apt.tutorial.IPostMonitor;
 
-public class Patchy extends TabActivity	{
+public class Patchy extends Activity {
 	private EditText status=null;
 	private SharedPreferences prefs=null;
 	private Twitter client=null;
 	private List<TimelineEntry> timeline=new ArrayList<TimelineEntry>();
 	private TimelineAdapter adapter=null;
-	private List<String> friends=new ArrayList<String>();
-	private ArrayAdapter<String> friendsAdapter=null;
-	private ListView friendsList=null;
-	private ITwitterMonitor service=null;
+	private IPostMonitor service=null;
 	private ServiceConnection svcConn=new ServiceConnection() {
 		public void onServiceConnected(ComponentName className,
 																		IBinder binder) {
-			service=ITwitterMonitor.Stub.asInterface(binder);
+			service=(IPostMonitor)binder;
 			
 			try {
 				service.registerAccount(prefs.getString("user", null),
@@ -75,56 +70,28 @@ public class Patchy extends TabActivity	{
 		prefs=PreferenceManager.getDefaultSharedPreferences(this);
 		prefs.registerOnSharedPreferenceChangeListener(prefListener);
 		
-		bindService(new Intent(ITwitterMonitor.class.getName()),
-								svcConn, Context.BIND_AUTO_CREATE);
+		bindService(new Intent(this, PostMonitor.class), svcConn,
+								BIND_AUTO_CREATE);
 	
 		adapter=new TimelineAdapter();
 		((ListView)findViewById(R.id.timeline)).setAdapter(adapter);
 		
-		TabHost.TabSpec spec=getTabHost().newTabSpec("tag1");
-		
-		spec.setContent(R.id.status_tab);
-		spec.setIndicator("Status", getResources()
-																.getDrawable(R.drawable.status));
-		getTabHost().addTab(spec);
-		
-		spec=getTabHost().newTabSpec("tag2");
-		spec.setContent(R.id.friends);
-		spec.setIndicator("Friends", getResources()
-																	.getDrawable(R.drawable.friends));
-		getTabHost().addTab(spec);
-		
-		getTabHost().setCurrentTab(0);
-		
-		for (Twitter.User u : getClient().getFriends()) {
-			friends.add(u.screenName);
-		}
-		
-		Collections.sort(friends);
-		
-		friendsList=(ListView)findViewById(R.id.friends);
-		
-		friendsAdapter=new ArrayAdapter<String>(this,
-												android.R.layout.simple_list_item_multiple_choice,
-												friends);
-		friendsList.setAdapter(friendsAdapter);
-		friendsList.setItemsCanFocus(false);
-		friendsList.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+		clearNotification();
 	}
 	
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
 		
-		try {
-			service.removeAccount(listener);
-		}
-		catch (Throwable t) {
-			Log.e("Patchy", "Exception in call to removeAccount()", t);
-			goBlooey(t);
-		}
-		
+		service.removeAccount(listener);
 		unbindService(svcConn);
+	}
+	
+	@Override
+	public void onNewIntent(Intent i) {
+		super.onNewIntent(i);
+		
+		clearNotification();
 	}
 	
 	@Override
@@ -142,28 +109,15 @@ public class Patchy extends TabActivity	{
 			
 			return(true);
 		}
-		else if (item.getItemId()==R.id.bff) {
-			try {
-				List<String> bff=new ArrayList<String>();
-				
-				for (int i=0;i<friends.size();i++) {
-					if (friendsList.isItemChecked(i)) {
-						bff.add(friends.get(i));
-					}
-				}
-				
-				service.setBestFriends(listener, bff);
-			}
-			catch (Throwable t) {
-				Log.e("Patchy",
-							"Exception in onOptionsItemSelected()", t);
-				goBlooey(t);
-			}
-			
-			return(true);
-		}
 		
 		return(super.onOptionsItemSelected(item));
+	}
+	
+	private void clearNotification() {
+		NotificationManager mgr=
+			(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+			
+		mgr.cancel(PostMonitor.NOTIFICATION_ID);
 	}
 	
 	synchronized private Twitter getClient() {
@@ -178,17 +132,10 @@ public class Patchy extends TabActivity	{
 	
 	synchronized private void resetClient() {
 		client=null;
-		
-		try {
-			service.removeAccount(listener);
-			service.registerAccount(prefs.getString("user", ""),
+		service.removeAccount(listener);
+		service.registerAccount(prefs.getString("user", ""),
 														prefs.getString("password", ""),
 														listener);
-		}
-		catch (Throwable t) {
-			Log.e("Patchy", "Exception in resetClient()", t);
-			goBlooey(t);
-		}
 	}
 	
 	private void updateStatus() {
@@ -219,22 +166,22 @@ public class Patchy extends TabActivity	{
 	
 	private SharedPreferences.OnSharedPreferenceChangeListener prefListener=
 		new SharedPreferences.OnSharedPreferenceChangeListener() {
-		public void onSharedPreferenceChanged(SharedPreferences sharedPrefs, String key) {
+		public void onSharedPreferenceChanged(SharedPreferences sharedPrefs,
+																						String key) {
 			if (key.equals("user") || key.equals("password")) {
 				resetClient();
 			}
 		}
 	};
 	
-	private ITwitterListener listener=new ITwitterListener.Stub() {
-		public void newFriendStatus(final String friend,
-																final String status,
+	private IPostListener listener=new IPostListener() {
+		public void newFriendStatus(final String friend, final String status,
 																final String createdAt) {
 			runOnUiThread(new Runnable() {
 				public void run() {
 					adapter.insert(new TimelineEntry(friend,
-																						createdAt,
-																						status),
+																					 createdAt,
+																					 status),
 													0);
 				}
 			});
@@ -267,7 +214,7 @@ public class Patchy extends TabActivity	{
 			if (row==null) {													
 				LayoutInflater inflater=getLayoutInflater();
 				
-				row=inflater.inflate(R.layout.row, null);
+				row=inflater.inflate(R.layout.row, parent, false);
 				wrapper=new TimelineEntryWrapper(row);
 				row.setTag(wrapper);
 			}

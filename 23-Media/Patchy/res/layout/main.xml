@@ -1,51 +1,26 @@
-<?xml version="1.0" encoding="utf-8"?>
-<TabHost xmlns:android="http://schemas.android.com/apk/res/android"
-	android:id="@android:id/tabhost"
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	android:layout_width="fill_parent"
-	android:layout_height="fill_parent"
+	android:layout_height="wrap_content"
+	android:stretchColumns="1"
 	>
-	<LinearLayout
-		android:orientation="vertical"
-		android:layout_width="fill_parent"
-		android:layout_height="fill_parent">
-		<TabWidget android:id="@android:id/tabs"
-			android:layout_width="fill_parent"
-			android:layout_height="wrap_content"
+	<TableRow>
+		<TextView android:text="Status:" />
+		<EditText android:id="@+id/status"
+			android:singleLine="false"
+			android:gravity="top"
+			android:lines="5"
+			android:scrollHorizontally="false"
+			android:maxLines="5"
+			android:maxWidth="200sp"
 		/>
-		<FrameLayout android:id="@android:id/tabcontent"
-			android:layout_width="fill_parent"
-			android:layout_height="fill_parent"
-			>
-			<TableLayout android:id="@+id/status_tab"
-				android:layout_width="fill_parent"
-				android:layout_height="wrap_content"
-				android:stretchColumns="1"
-				>
-				<TableRow>
-					<TextView android:text="Status:" />
-					<EditText android:id="@+id/status"
-						android:singleLine="false"
-						android:gravity="top"
-						android:lines="5"
-						android:scrollHorizontally="false"
-						android:maxLines="5"
-						android:maxWidth="200sp"
-					/>
-				</TableRow>
-				<Button android:id="@+id/send"
-					android:layout_width="fill_parent"
-					android:layout_height="wrap_content"
-					android:text="Send"
-				/>
-				<ListView android:id="@+id/timeline"
-					android:layout_width="fill_parent"
-					android:layout_height="fill_parent"
-				/>
-			</TableLayout>
-			<ListView android:id="@+id/friends"
-				android:layout_width="fill_parent"
-				android:layout_height="fill_parent"
-			/>
-		</FrameLayout>
-	</LinearLayout>
-</TabHost>
+	</TableRow>
+	<Button android:id="@+id/send"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:text="Send"
+	/>
+	<ListView android:id="@+id/timeline"
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent"
+	/>
+</TableLayout>

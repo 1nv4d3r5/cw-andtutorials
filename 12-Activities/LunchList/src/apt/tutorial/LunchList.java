@@ -1,19 +1,16 @@
 package apt.tutorial;
 
-import android.app.Activity;
+import android.app.ListActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.LayoutInflater;
-import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.CursorAdapter;
 import android.widget.Button;
@@ -23,12 +20,8 @@ import android.widget.ListView;
 import android.widget.RadioGroup;
 import android.widget.TabHost;
 import android.widget.TextView;
-import android.widget.Toast;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-public class LunchList extends Activity {
+public class LunchList extends ListActivity {
 	public final static String ID_EXTRA="apt.tutorial._ID";
 	Cursor model=null;
 	RestaurantAdapter adapter=null;
@@ -36,62 +29,45 @@ public class LunchList extends Activity {
 	EditText address=null;
 	EditText notes=null;
 	RadioGroup types=null;
-	Restaurant current=null;
-	AtomicBoolean isActive=new AtomicBoolean(true);
-	int progress=0;
-	SQLiteDatabase db=null;
+	RestaurantHelper helper=null;
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		requestWindowFeature(Window.FEATURE_PROGRESS);
 		setContentView(R.layout.main);
 		
-		db=(new RestaurantSQLiteHelper(this))
-															 .getWritableDatabase();
+		helper=new RestaurantHelper(this);
 		
 		name=(EditText)findViewById(R.id.name);
 		address=(EditText)findViewById(R.id.addr);
 		notes=(EditText)findViewById(R.id.notes);
 		types=(RadioGroup)findViewById(R.id.types);
 		
-		ListView list=(ListView)findViewById(R.id.restaurants);
-		
-		model=Restaurant.getAll(db);
+		model=helper.getAll();
 		startManagingCursor(model);
 		adapter=new RestaurantAdapter(model);
-		list.setAdapter(adapter);
-		list.setOnItemClickListener(onListClick);
-	}
-	
-	@Override
-	public void onPause() {
-		super.onPause();
-		
-		isActive.set(false);
-	}
-	
-	@Override
-	public void onResume() {
-		super.onResume();
-		
-		isActive.set(true);
-		
-		if (progress>0) {
-			startWork();
-		}
+		setListAdapter(adapter);
 	}
 	
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-		db.close();
+		
+		helper.close();
+	}
+	
+	@Override
+	public void onListItemClick(ListView list, View view,
+															int position, long id) {
+		Intent i=new Intent(LunchList.this, DetailForm.class);
+
+		i.putExtra(ID_EXTRA, String.valueOf(id));
+		startActivity(i);
 	}
 	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		new MenuInflater(getApplication())
-																	.inflate(R.menu.option, menu);
+		new MenuInflater(this).inflate(R.menu.option, menu);
 
 		return(super.onCreateOptionsMenu(menu));
 	}
@@ -99,12 +75,7 @@ public class LunchList extends Activity {
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		if (item.getItemId()==R.id.add) {
-			startActivity(new Intent(this, DetailForm.class));
-			
-			return(true);
-		}
-		else if (item.getItemId()==R.id.run) {
-			startWork();
+			startActivity(new Intent(LunchList.this, DetailForm.class));
 			
 			return(true);
 		}
@@ -112,49 +83,26 @@ public class LunchList extends Activity {
 		return(super.onOptionsItemSelected(item));
 	}
 	
-	private void startWork() {
-		setProgressBarVisibility(true);
-		new Thread(longTask).start();			
-	}
-	
-	private void doSomeLongWork(final int incr) {
-		runOnUiThread(new Runnable() {
-			public void run() {
-				progress+=incr;
-				setProgress(progress);
-			}
-		});
-		
-		SystemClock.sleep(250);	// should be something more useful!
-	}
-	
-	private AdapterView.OnItemClickListener onListClick=new AdapterView.OnItemClickListener() {
-		public void onItemClick(AdapterView<?> parent,
-														View view, int position,
-														long id) {
-			Intent i=new Intent(LunchList.this, DetailForm.class);
+	private View.OnClickListener onSave=new View.OnClickListener() {
+		public void onClick(View v) {
+			String type=null;
 			
-			i.putExtra(ID_EXTRA, String.valueOf(id));
-			startActivity(i);
-		}
-	};
-		
-	private Runnable longTask=new Runnable() {
-		public void run() {
-			for (int i=progress;
-					 i<10000 && isActive.get();
-					 i+=200) {
-				doSomeLongWork(200);
+			switch (types.getCheckedRadioButtonId()) {
+				case R.id.sit_down:
+					type="sit_down";
+					break;
+				case R.id.take_out:
+					type="take_out";
+					break;
+				case R.id.delivery:
+					type="delivery";
+					break;
 			}
 			
-			if (isActive.get()) {
-				runOnUiThread(new Runnable() {
-					public void run() {
-						setProgressBarVisibility(false);
-						progress=0;
-					}
-				});
-			}
+			helper.insert(name.getText().toString(),
+										address.getText().toString(), type,
+										notes.getText().toString());
+			model.requery();
 		}
 	};
 	
@@ -166,9 +114,9 @@ public class LunchList extends Activity {
 		@Override
 		public void bindView(View row, Context ctxt,
 												 Cursor c) {
-			RestaurantWrapper wrapper=(RestaurantWrapper)row.getTag();
+			RestaurantHolder holder=(RestaurantHolder)row.getTag();
 			
-			wrapper.populateFrom(c);
+			holder.populateFrom(c, helper);
 		}
 		
 		@Override
@@ -176,63 +124,41 @@ public class LunchList extends Activity {
 												 ViewGroup parent) {
 			LayoutInflater inflater=getLayoutInflater();
 			View row=inflater.inflate(R.layout.row, parent, false);
-			RestaurantWrapper wrapper=new RestaurantWrapper(row);
+			RestaurantHolder holder=new RestaurantHolder(row);
 			
-			row.setTag(wrapper);
-			wrapper.populateFrom(c);
+			row.setTag(holder);
 			
 			return(row);
 		}
 	}
 	
-	class RestaurantWrapper {
+	static class RestaurantHolder {
 		private TextView name=null;
 		private TextView address=null;
 		private ImageView icon=null;
 		private View row=null;
 		
-		RestaurantWrapper(View row) {
+		RestaurantHolder(View row) {
 			this.row=row;
+			
+			name=(TextView)row.findViewById(R.id.title);
+			address=(TextView)row.findViewById(R.id.address);
+			icon=(ImageView)row.findViewById(R.id.icon);
 		}
 		
-		void populateFrom(Cursor c) {
-			getName().setText(c.getString(c.getColumnIndex("name")));
-			getAddress().setText(c.getString(c.getColumnIndex("address")));
-			String type=c.getString(c.getColumnIndex("type"));
-			
-			if (type.equals("sit_down")) {
-				getIcon().setImageResource(R.drawable.ball_red);
+		void populateFrom(Cursor c, RestaurantHelper helper) {
+			name.setText(helper.getName(c));
+			address.setText(helper.getAddress(c));
+	
+			if (helper.getType(c).equals("sit_down")) {
+				icon.setImageResource(R.drawable.ball_red);
 			}
-			else if (type.equals("take_out")) {
-				getIcon().setImageResource(R.drawable.ball_yellow);
+			else if (helper.getType(c).equals("take_out")) {
+				icon.setImageResource(R.drawable.ball_yellow);
 			}
 			else {
-				getIcon().setImageResource(R.drawable.ball_green);
+				icon.setImageResource(R.drawable.ball_green);
 			}
-		}
-		
-		TextView getName() {
-			if (name==null) {
-				name=(TextView)row.findViewById(R.id.title);
-			}
-			
-			return(name);
-		}
-		
-		TextView getAddress() {
-			if (address==null) {
-				address=(TextView)row.findViewById(R.id.address);
-			}
-			
-			return(address);
-		}
-		
-		ImageView getIcon() {
-			if (icon==null) {
-				icon=(ImageView)row.findViewById(R.id.icon);
-			}
-			
-			return(icon);
 		}
 	}
 }

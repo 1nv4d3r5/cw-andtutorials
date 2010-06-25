@@ -1,7 +1,7 @@
 package apt.tutorial;
 
 import android.app.Activity;
-import android.database.sqlite.SQLiteDatabase;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -14,16 +14,15 @@ public class DetailForm extends Activity {
 	EditText address=null;
 	EditText notes=null;
 	RadioGroup types=null;
-	Restaurant current=null;
-	SQLiteDatabase db=null;
+	RestaurantHelper helper=null;
 	String restaurantId=null;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.detail_form);
-		db=(new RestaurantSQLiteHelper(this))
-																		.getWritableDatabase();
+		
+		helper=new RestaurantHelper(this);
 		
 		name=(EditText)findViewById(R.id.name);
 		address=(EditText)findViewById(R.id.addr);
@@ -36,10 +35,7 @@ public class DetailForm extends Activity {
 		
 		restaurantId=getIntent().getStringExtra(LunchList.ID_EXTRA);
 		
-		if (restaurantId==null) {
-			current=new Restaurant();
-		}
-		else {
+		if (restaurantId!=null) {
 			load();
 		}
 	}
@@ -48,52 +44,55 @@ public class DetailForm extends Activity {
 	public void onDestroy() {
 		super.onDestroy();
 	
-		db.close();
+		helper.close();
 	}
 	
 	private void load() {
-		current=Restaurant.getById(restaurantId, db);
+		Cursor c=helper.getById(restaurantId);
+
+		c.moveToFirst();		
+		name.setText(helper.getName(c));
+		address.setText(helper.getAddress(c));
+		notes.setText(helper.getNotes(c));
 		
-		name.setText(current.getName());
-		address.setText(current.getAddress());
-		notes.setText(current.getNotes());
-		
-		if (current.getType().equals("sit_down")) {
+		if (helper.getType(c).equals("sit_down")) {
 			types.check(R.id.sit_down);
 		}
-		else if (current.getType().equals("take_out")) {
+		else if (helper.getType(c).equals("take_out")) {
 			types.check(R.id.take_out);
 		}
 		else {
 			types.check(R.id.delivery);
 		}
+		
+		c.close();
 	}
 	
 	private View.OnClickListener onSave=new View.OnClickListener() {
 		public void onClick(View v) {
-			current.setName(name.getText().toString());
-			current.setAddress(address.getText().toString());
-			current.setNotes(notes.getText().toString());
+			String type=null;
 			
 			switch (types.getCheckedRadioButtonId()) {
 				case R.id.sit_down:
-					current.setType("sit_down");
+					type="sit_down";
 					break;
-					
 				case R.id.take_out:
-					current.setType("take_out");
+					type="take_out";
 					break;
-					
 				case R.id.delivery:
-					current.setType("delivery");
+					type="delivery";
 					break;
 			}
 
 			if (restaurantId==null) {
-				current.save(db);
+				helper.insert(name.getText().toString(),
+											address.getText().toString(), type,
+											notes.getText().toString());
 			}
 			else {
-				current.update(restaurantId, db);
+				helper.update(restaurantId, name.getText().toString(),
+											address.getText().toString(), type,
+											notes.getText().toString());
 			}
 			
 			finish();

@@ -15,5 +15,6 @@
 				</activity>
 				<activity android:name=".EditPreferences">
 				</activity>
+				<service android:name=".PostMonitor" />
 		</application>
 </manifest>

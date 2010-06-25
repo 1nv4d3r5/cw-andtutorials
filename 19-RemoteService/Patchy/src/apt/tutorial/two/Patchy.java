@@ -25,8 +25,8 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 import winterwell.jtwitter.Twitter;
-import apt.tutorial.ITwitterListener;
-import apt.tutorial.ITwitterMonitor;
+import apt.tutorial.IPostListener;
+import apt.tutorial.IPostMonitor;
 
 public class Patchy extends Activity {
 	private EditText status=null;
@@ -34,11 +34,11 @@ public class Patchy extends Activity {
 	private Twitter client=null;
 	private List<TimelineEntry> timeline=new ArrayList<TimelineEntry>();
 	private TimelineAdapter adapter=null;
-	private ITwitterMonitor service=null;
+	private IPostMonitor service=null;
 	private ServiceConnection svcConn=new ServiceConnection() {
 		public void onServiceConnected(ComponentName className,
 																		IBinder binder) {
-			service=ITwitterMonitor.Stub.asInterface(binder);
+			service=IPostMonitor.Stub.asInterface(binder);
 			
 			try {
 				service.registerAccount(prefs.getString("user", null),
@@ -70,7 +70,7 @@ public class Patchy extends Activity {
 		prefs=PreferenceManager.getDefaultSharedPreferences(this);
 		prefs.registerOnSharedPreferenceChangeListener(prefListener);
 		
-		bindService(new Intent(ITwitterMonitor.class.getName()),
+		bindService(new Intent(IPostMonitor.class.getName()),
 								svcConn, Context.BIND_AUTO_CREATE);
 	
 		adapter=new TimelineAdapter();
@@ -171,7 +171,7 @@ public class Patchy extends Activity {
 		}
 	};
 	
-	private ITwitterListener listener=new ITwitterListener.Stub() {
+	private IPostListener listener=new IPostListener.Stub() {
 		public void newFriendStatus(final String friend,
 																final String status,
 																final String createdAt) {

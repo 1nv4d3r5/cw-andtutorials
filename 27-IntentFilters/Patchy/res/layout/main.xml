@@ -1,0 +1,35 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical"
+	android:layout_width="fill_parent"
+	android:layout_height="wrap_content"
+	>
+	<LinearLayout android:id="@+id/status_row"
+		android:orientation="vertical"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		>
+		<TextView android:text="Status:"
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+		/>
+		<EditText android:id="@+id/status"
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:singleLine="false"
+			android:gravity="top"
+			android:lines="5"
+			android:scrollHorizontally="false"
+			android:maxLines="5"
+			android:maxWidth="200sp"
+		/>
+		<Button android:id="@+id/send"
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:text="Send"
+		/>
+	</LinearLayout>
+	<ListView android:id="@+id/timeline"
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent"
+	/>
+</LinearLayout>

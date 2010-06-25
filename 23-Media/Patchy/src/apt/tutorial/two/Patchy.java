@@ -1,9 +1,9 @@
 package apt.tutorial.two;
 
-import android.app.TabActivity ;
+import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.NotificationManager;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
@@ -25,19 +25,17 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.TabHost;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import winterwell.jtwitter.Twitter;
-import apt.tutorial.ITwitterListener;
-import apt.tutorial.ITwitterMonitor;
+import apt.tutorial.IPostListener;
+import apt.tutorial.IPostMonitor;
 
-public class Patchy extends TabActivity	{
+public class Patchy extends Activity {
 	public static final String LATITUDE="apt.tutorial.latitude";
 	public static final String LONGITUDE="apt.tutorial.longitude";
 	public static final String STATUS_TEXT="apt.tutorial.statusText";
@@ -46,16 +44,13 @@ public class Patchy extends TabActivity	{
 	private Twitter client=null;
 	private List<TimelineEntry> timeline=new ArrayList<TimelineEntry>();
 	private TimelineAdapter adapter=null;
-	private List<String> friends=new ArrayList<String>();
-	private ArrayAdapter<String> friendsAdapter=null;
-	private ListView friendsList=null;
-	private ITwitterMonitor service=null;
+	private IPostMonitor service=null;
 	private LocationManager locMgr=null;
 	private Pattern regexLocation=Pattern.compile("L\\:((\\-)?[0-9]+(\\.[0-9]+)?)\\,((\\-)?[0-9]+(\\.[0-9]+)?)");
 	private ServiceConnection svcConn=new ServiceConnection() {
 		public void onServiceConnected(ComponentName className,
 																		IBinder binder) {
-			service=ITwitterMonitor.Stub.asInterface(binder);
+			service=(IPostMonitor)binder;
 			
 			try {
 				service.registerAccount(prefs.getString("user", null),
@@ -87,58 +82,28 @@ public class Patchy extends TabActivity	{
 		prefs=PreferenceManager.getDefaultSharedPreferences(this);
 		prefs.registerOnSharedPreferenceChangeListener(prefListener);
 		
-		bindService(new Intent(ITwitterMonitor.class.getName()),
-								svcConn, Context.BIND_AUTO_CREATE);
+		bindService(new Intent(this, PostMonitor.class), svcConn,
+								BIND_AUTO_CREATE);
 	
 		adapter=new TimelineAdapter();
 		
 		ListView list=(ListView)findViewById(R.id.timeline);
-		
+
 		list.setAdapter(adapter);
 		list.setOnItemClickListener(onStatusClick);
 		
-		TabHost.TabSpec spec=getTabHost().newTabSpec("tag1");
+		clearNotification();
 		
-		spec.setContent(R.id.status_tab);
-		spec.setIndicator("Status", getResources()
-																.getDrawable(R.drawable.status));
-		getTabHost().addTab(spec);
-		
-		spec=getTabHost().newTabSpec("tag2");
-		spec.setContent(R.id.friends);
-		spec.setIndicator("Friends", getResources()
-																	.getDrawable(R.drawable.friends));
-		getTabHost().addTab(spec);
-		
-		getTabHost().setCurrentTab(0);
-		
-		try {
-			for (Twitter.User u : getClient().getFriends()) {
-				friends.add(u.screenName);
-			}
-		}
-		catch (Throwable t) {
-			Log.e("Patchy",
-						"Exception in JTwitter#getFriends()", t);
-			goBlooey(t);
-		}
-		
-		Collections.sort(friends);
-		
-		friendsList=(ListView)findViewById(R.id.friends);
-		
-		friendsAdapter=new ArrayAdapter<String>(this,
-												android.R.layout.simple_list_item_multiple_choice,
-												friends);
-		friendsList.setAdapter(friendsAdapter);
-		friendsList.setItemsCanFocus(false);
-		friendsList.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-		
-		locMgr=(LocationManager)getSystemService(Context.LOCATION_SERVICE);
+		locMgr=(LocationManager)getSystemService(LOCATION_SERVICE);
 		locMgr.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-																		10000,
-																		10000.0f,
-																		onLocationChange);
+																	10000, 10000.0f,
+																	onLocationChange);
+
+	}
+	
+	@Override
+	public void onNewIntent(Intent i) {
+		clearNotification();
 	}
 	
 	@Override
@@ -146,17 +111,7 @@ public class Patchy extends TabActivity	{
 		super.onDestroy();
 		
 		locMgr.removeUpdates(onLocationChange);
-		
-		try {
-			if (service!=null) {
-				service.removeAccount(listener);
-			}
-		}
-		catch (Throwable t) {
-			Log.e("Patchy", "Exception in call to removeAccount()", t);
-			goBlooey(t);
-		}
-		
+		service.removeAccount(listener);
 		unbindService(svcConn);
 	}
 	
@@ -175,26 +130,6 @@ public class Patchy extends TabActivity	{
 			
 			return(true);
 		}
-		else if (item.getItemId()==R.id.bff) {
-			try {
-				List<String> bff=new ArrayList<String>();
-				
-				for (int i=0;i<friends.size();i++) {
-					if (friendsList.isItemChecked(i)) {
-						bff.add(friends.get(i));
-					}
-				}
-				
-				service.setBestFriends(listener, bff);
-			}
-			catch (Throwable t) {
-				Log.e("Patchy",
-							"Exception in onOptionsItemSelected()", t);
-				goBlooey(t);
-			}
-			
-			return(true);
-		}
 		else if (item.getItemId()==R.id.location) {
 			insertLocation();
 			
@@ -202,7 +137,7 @@ public class Patchy extends TabActivity	{
 		}
 		else if (item.getItemId()==R.id.help) {
 			startActivity(new Intent(this, HelpCast.class));
-			
+
 			return(true);
 		}
 		
@@ -211,26 +146,29 @@ public class Patchy extends TabActivity	{
 	
 	private void insertLocation() {
 		Location loc=locMgr.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-
+		
 		if (loc==null) {
 			Toast
-				.makeText(this,
-										"No location available",
-										Toast.LENGTH_SHORT)
+				.makeText(this, "No location available", Toast.LENGTH_SHORT)
 				.show();
 		}
 		else {
 			StringBuilder buf=new StringBuilder(status
-																				.getText()
-																				.toString());
-
+																				 .getText()
+																				 .toString());
 			buf.append(" L:");
 			buf.append(String.valueOf(loc.getLatitude()));
 			buf.append(",");
 			buf.append(String.valueOf(loc.getLongitude()));
-			
 			status.setText(buf.toString());
 		}
+	}
+	
+	private void clearNotification() {
+		NotificationManager mgr=
+			(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+			
+		mgr.cancel(PostMonitor.NOTIFICATION_ID);
 	}
 	
 	synchronized private Twitter getClient() {
@@ -245,17 +183,10 @@ public class Patchy extends TabActivity	{
 	
 	synchronized private void resetClient() {
 		client=null;
-		
-		try {
-			service.removeAccount(listener);
-			service.registerAccount(prefs.getString("user", ""),
+		service.removeAccount(listener);
+		service.registerAccount(prefs.getString("user", ""),
 														prefs.getString("password", ""),
 														listener);
-		}
-		catch (Throwable t) {
-			Log.e("Patchy", "Exception in resetClient()", t);
-			goBlooey(t);
-		}
 	}
 	
 	private void updateStatus() {
@@ -286,43 +217,40 @@ public class Patchy extends TabActivity	{
 	
 	private SharedPreferences.OnSharedPreferenceChangeListener prefListener=
 		new SharedPreferences.OnSharedPreferenceChangeListener() {
-		public void onSharedPreferenceChanged(SharedPreferences sharedPrefs, String key) {
+		public void onSharedPreferenceChanged(SharedPreferences sharedPrefs,
+																						String key) {
 			if (key.equals("user") || key.equals("password")) {
 				resetClient();
 			}
 		}
 	};
 	
-	private ITwitterListener listener=new ITwitterListener.Stub() {
-		public void newFriendStatus(final String friend,
-																final String status,
+	private IPostListener listener=new IPostListener() {
+		public void newFriendStatus(final String friend, final String status,
 																final String createdAt) {
 			runOnUiThread(new Runnable() {
 				public void run() {
 					adapter.insert(new TimelineEntry(friend,
-																						createdAt,
-																						status),
+																					 createdAt,
+																					 status),
 													0);
 				}
 			});
 		}
 	};
 	
-	LocationListener onLocationChange=new LocationListener() {
+	private LocationListener onLocationChange=new LocationListener() {
 		public void onLocationChanged(Location location) {
 			// required for interface, not used
 		}
-		
 		public void onProviderDisabled(String provider) {
 			// required for interface, not used
 		}
-		
 		public void onProviderEnabled(String provider) {
 			// required for interface, not used
 		}
-		
 		public void onStatusChanged(String provider, int status,
-																	Bundle extras) {
+																 Bundle extras) {
 			// required for interface, not used
 		}
 	};
@@ -375,7 +303,7 @@ public class Patchy extends TabActivity	{
 			if (row==null) {													
 				LayoutInflater inflater=getLayoutInflater();
 				
-				row=inflater.inflate(R.layout.row, null);
+				row=inflater.inflate(R.layout.row, parent, false);
 				wrapper=new TimelineEntryWrapper(row);
 				row.setTag(wrapper);
 			}

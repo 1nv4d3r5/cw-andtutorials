@@ -3,6 +3,7 @@ package apt.tutorial.two;
 import android.app.Activity;
 import android.graphics.PixelFormat;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.View;
 import android.widget.MediaController;
 import android.widget.VideoView;
@@ -18,7 +19,8 @@ public class HelpCast extends Activity {
 		getWindow().setFormat(PixelFormat.TRANSLUCENT);
 		setContentView(R.layout.helpcast);
 	
-		File clip=new File("/sdcard/Patchy/helpcast.mp4");
+		File clip=new File(Environment.getExternalStorageDirectory(),
+											 "helpcast.mp4");
 		
 		if (clip.exists()) {
 			video=(VideoView)findViewById(R.id.video);
@@ -28,6 +30,7 @@ public class HelpCast extends Activity {
 			ctlr.setMediaPlayer(video);
 			video.setMediaController(ctlr);
 			video.requestFocus();
+			video.start();
 		}
 	}
 }

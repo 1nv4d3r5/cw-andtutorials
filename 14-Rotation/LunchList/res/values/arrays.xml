@@ -8,10 +8,10 @@
 		<item>By Address, Descending</item>
 	</string-array>
 	<string-array name="sort_clauses">
-		<item>ORDER BY name ASC</item>
-		<item>ORDER BY name DESC</item>
-		<item>ORDER BY type, name ASC</item>
-		<item>ORDER BY address ASC</item>
-		<item>ORDER BY address DESC</item>
+		<item>name ASC</item>
+		<item>name DESC</item>
+		<item>type, name ASC</item>
+		<item>address ASC</item>
+		<item>address DESC</item>
 	</string-array>
 </resources>

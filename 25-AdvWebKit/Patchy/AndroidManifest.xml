@@ -22,5 +22,6 @@
 				</activity>
 				<activity android:name=".HelpPage">
 				</activity>
+				<service android:name=".PostMonitor" />
 		</application>
 </manifest>

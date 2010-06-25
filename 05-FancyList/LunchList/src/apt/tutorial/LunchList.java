@@ -65,80 +65,58 @@ public class LunchList extends Activity {
 	
 	class RestaurantAdapter extends ArrayAdapter<Restaurant> {
 		RestaurantAdapter() {
-			super(LunchList.this,
-						android.R.layout.simple_list_item_1,
-						model);
+			super(LunchList.this, R.layout.row, model);
 		}
 		
 		public View getView(int position, View convertView,
 												ViewGroup parent) {
 			View row=convertView;
-			RestaurantWrapper wrapper=null;
+			RestaurantHolder holder=null;
 			
 			if (row==null) {													
 				LayoutInflater inflater=getLayoutInflater();
 				
 				row=inflater.inflate(R.layout.row, parent, false);
-				wrapper=new RestaurantWrapper(row);
-				row.setTag(wrapper);
+				holder=new RestaurantHolder(row);
+				row.setTag(holder);
 			}
 			else {
-				wrapper=(RestaurantWrapper)row.getTag();
+				holder=(RestaurantHolder)row.getTag();
 			}
 			
-			wrapper.populateFrom(model.get(position));
+			holder.populateFrom(model.get(position));
 			
 			return(row);
 		}
 	}
 	
-	class RestaurantWrapper {
+	static class RestaurantHolder {
 		private TextView name=null;
 		private TextView address=null;
 		private ImageView icon=null;
 		private View row=null;
 		
-		RestaurantWrapper(View row) {
+		RestaurantHolder(View row) {
 			this.row=row;
+			
+			name=(TextView)row.findViewById(R.id.title);
+			address=(TextView)row.findViewById(R.id.address);
+			icon=(ImageView)row.findViewById(R.id.icon);
 		}
 		
 		void populateFrom(Restaurant r) {
-			getName().setText(r.getName());
-			getAddress().setText(r.getAddress());
+			name.setText(r.getName());
+			address.setText(r.getAddress());
 	
 			if (r.getType().equals("sit_down")) {
-				getIcon().setImageResource(R.drawable.ball_red);
+				icon.setImageResource(R.drawable.ball_red);
 			}
 			else if (r.getType().equals("take_out")) {
-				getIcon().setImageResource(R.drawable.ball_yellow);
+				icon.setImageResource(R.drawable.ball_yellow);
 			}
 			else {
-				getIcon().setImageResource(R.drawable.ball_green);
+				icon.setImageResource(R.drawable.ball_green);
 			}
-		}
-		
-		TextView getName() {
-			if (name==null) {
-				name=(TextView)row.findViewById(R.id.title);
-			}
-			
-			return(name);
-		}
-		
-		TextView getAddress() {
-			if (address==null) {
-				address=(TextView)row.findViewById(R.id.address);
-			}
-			
-			return(address);
-		}
-		
-		ImageView getIcon() {
-			if (icon==null) {
-				icon=(ImageView)row.findViewById(R.id.icon);
-			}
-			
-			return(icon);
 		}
 	}
 }

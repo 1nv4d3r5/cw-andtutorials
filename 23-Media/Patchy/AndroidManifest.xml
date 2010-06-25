@@ -20,5 +20,6 @@
 				</activity>
 				<activity android:name=".HelpCast">
 				</activity>
+				<service android:name=".PostMonitor" />
 		</application>
 </manifest>
