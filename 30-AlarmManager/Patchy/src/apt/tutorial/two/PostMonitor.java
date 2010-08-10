@@ -35,7 +35,6 @@ public class PostMonitor extends WakefulIntentService {
 	private static final String NOTIFY_KEYWORD="snicklefritz";
 	private static final int INITIAL_POLL_PERIOD=1000;
 	private static final int POLL_PERIOD=60000;
-	private AtomicBoolean active=new AtomicBoolean(true);
 	private Set<Long> seenStatus=new HashSet<Long>();
 	private Map<IPostListener, Account> accounts=
 					new ConcurrentHashMap<IPostListener, Account>();
@@ -52,7 +51,6 @@ public class PostMonitor extends WakefulIntentService {
 	public void onCreate() {
 		super.onCreate();
 		
-		new Thread(threadBody).start();
 		registerReceiver(onBatteryChanged,
 											new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
 		
@@ -75,7 +73,6 @@ public class PostMonitor extends WakefulIntentService {
 		
 		alarm.cancel(pi);
 		unregisterReceiver(onBatteryChanged);
-		active.set(false);
 	}
 	
 	@Override
@@ -152,24 +149,6 @@ public class PostMonitor extends WakefulIntentService {
 		
 		mgr.notify(NOTIFICATION_ID, note);
 	}
-	
-	private Runnable threadBody=new Runnable() {
-		public void run() {
-			while (active.get()) {
-				for (Account l : accounts.values()) {
-					poll(l);
-				}
-
-				int pollPeriod=POLL_PERIOD;
-				
-				if (isBatteryLow.get()) {
-					pollPeriod*=10;
-				}
-				
-				SystemClock.sleep(pollPeriod);
-			}
-		}
-	};
 	
 	BroadcastReceiver onBatteryChanged=new BroadcastReceiver() {
 		public void onReceive(Context context, Intent intent) {
